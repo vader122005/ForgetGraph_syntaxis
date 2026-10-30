@@ -67,6 +67,18 @@ CSS = f"""
   section[data-testid="stSidebar"] {{
       background: #0d1220 !important; border-right: 1px solid {BORDER};
   }}
+  section[data-testid="stSidebar"] label {{
+      display: flex; align-items: center; padding: 0.45rem 0.7rem;
+      border-radius: 10px; color: {MUTED}; font-weight: 600;
+  }}
+  section[data-testid="stSidebar"] label:hover {{ background: rgba(108,140,255,0.08); }}
+  section[data-testid="stSidebar"] label:has(input:checked) {{
+      background: rgba(108,140,255,0.18); border: 1px solid {ACCENT}; color: #ffffff;
+  }}
+  .fg-h4 {{
+      font-size: 1.05rem; font-weight: 700; color: {TEXT};
+      margin: 1.4rem 0 0.6rem 0;
+  }}
   .fg-card {{
       background: {CARD}; border: 1px solid {BORDER}; border-radius: 16px;
       padding: 1.2rem 1.4rem; margin-bottom: 1rem;
@@ -83,11 +95,11 @@ CSS = f"""
       display: inline-block; padding: 0.25rem 0.9rem; border-radius: 999px;
       font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em;
   }}
-  .fg-badge.pass  {{ background: rgba(74,222,128,0.15); color: {GREEN}; border: 1px solid {GREEN}; }}
-  .fg-badge.fail  {{ background: rgba(248,113,113,0.15); color: {RED}; border: 1px solid {RED}; }}
-  .fg-badge.block {{ background: rgba(248,113,113,0.15); color: {RED}; border: 1px solid {RED}; }}
-  .fg-badge.ok    {{ background: rgba(74,222,128,0.15); color: {GREEN}; border: 1px solid {GREEN}; }}
-  .fg-badge.info  {{ background: rgba(251,191,36,0.15); color: {AMBER}; border: 1px solid {AMBER}; }}
+  .fg-badge.pass  {{ background: rgba(74,222,128,0.22); color: #b9f6d4; border: 1px solid {GREEN}; }}
+  .fg-badge.fail  {{ background: rgba(248,113,113,0.22); color: #ffd4d4; border: 1px solid {RED}; }}
+  .fg-badge.block {{ background: rgba(248,113,113,0.22); color: #ffd4d4; border: 1px solid {RED}; }}
+  .fg-badge.ok    {{ background: rgba(74,222,128,0.22); color: #b9f6d4; border: 1px solid {GREEN}; }}
+  .fg-badge.info  {{ background: rgba(251,191,36,0.22); color: #ffe9b8; border: 1px solid {AMBER}; }}
   .fg-table {{ width: 100%; border-collapse: collapse; font-size: 0.9rem; }}
   .fg-table th {{
       text-align: left; color: {MUTED}; font-size: 0.72rem; text-transform: uppercase;
@@ -201,8 +213,12 @@ def kpi_row() -> None:
     c5.markdown(kpi("Verifications Passed", f"{verif_pass}", "reference ≈ replacement", "✅"), unsafe_allow_html=True)
 
 
+def section_heading(title: str) -> None:
+    st.markdown(f'<div class="fg-h4">{title}</div>', unsafe_allow_html=True)
+
+
 def dependency_graph() -> None:
-    st.markdown("#### Dependency Graph")
+    section_heading("Dependency Graph")
     users_n = db_count("SELECT COUNT(*) FROM users")
     feats_n = db_count("SELECT COUNT(*) FROM features")
     preds_n = db_count("SELECT COUNT(*) FROM predictions")
@@ -240,10 +256,9 @@ def dependency_graph() -> None:
 
 
 def deletion_center() -> None:
-    st.markdown("#### Deletion Center")
+    section_heading("Deletion Center")
     left, right = st.columns([1, 2])
     with left:
-        st.markdown('<div class="fg-card" style="margin-bottom:0;">', unsafe_allow_html=True)
         st.markdown("**Delete a user**")
         st.markdown('<div class="fg-sub">Runs the 6-step pipeline; tombstoned ids are skipped.</div>', unsafe_allow_html=True)
         user_id = st.number_input("user_id", min_value=1, value=1, step=1, key="del_uid")
@@ -264,10 +279,8 @@ def deletion_center() -> None:
         if "del_banner" in st.session_state:
             kind, text = st.session_state["del_banner"]
             st.markdown(badge(kind, text.upper()), unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
 
     with right:
-        st.markdown('<div class="fg-card" style="margin-bottom:0;">', unsafe_allow_html=True)
         st.markdown("**Deletion Timeline**")
         last = st.session_state.get("last_result")
         if not last:
@@ -297,11 +310,10 @@ def deletion_center() -> None:
                     f'<div class="fg-step-sub">{sub}</div></div>',
                     unsafe_allow_html=True,
                 )
-        st.markdown("</div>", unsafe_allow_html=True)
 
 
 def model_comparison() -> None:
-    st.markdown("#### Model Comparison")
+    section_heading("Model Comparison")
     original_model = load_original_model()
     if original_model is None:
         st.markdown(
@@ -390,7 +402,7 @@ def coefficient_chart(original_model, replacement_model, ref_coef, ref_intercept
 
 
 def tombstones() -> None:
-    st.markdown("#### Deleted Users (Tombstones)")
+    section_heading("Deleted Users (Tombstones)")
     rows = db_rows(
         "SELECT user_id, deleted_at FROM tombstones ORDER BY user_id"
     )
@@ -413,10 +425,9 @@ def tombstones() -> None:
 
 
 def reingestion() -> None:
-    st.markdown("#### Re-ingestion Guard")
+    section_heading("Re-ingestion Guard")
     left, right = st.columns(2)
     with left:
-        st.markdown('<div class="fg-card" style="margin-bottom:0;">', unsafe_allow_html=True)
         st.markdown("**Simulate re-ingestion**")
         st.markdown(
             '<div class="fg-sub">Attempt to insert a user_id back into <code>users</code>. '
@@ -443,14 +454,12 @@ def reingestion() -> None:
             else:
                 st.session_state["reing_result"] = ("block", f"BLOCKED — user {uid} is tombstoned or duplicate; rejection logged.")
     with right:
-        st.markdown('<div class="fg-card" style="margin-bottom:0;">', unsafe_allow_html=True)
         st.markdown("**Result**")
         res = st.session_state.get("reing_result")
         if res:
             st.markdown(badge(res[0], res[1]), unsafe_allow_html=True)
         else:
             st.markdown('<div class="fg-sub">No re-ingestion attempt yet in this session.</div>', unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
 
 
 NAV = ["Overview", "Dependency Graph", "Deletion Center", "Tombstones", "Re-ingestion Guard"]
