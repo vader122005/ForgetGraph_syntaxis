@@ -579,28 +579,35 @@ def coefficient_chart(original_model, replacement_model, ref_coef, ref_intercept
         ax.grid(axis="y", color=(1, 1, 1), alpha=0.06, linewidth=0.6)
         ax.set_axisbelow(True)
 
-    def label_bars(ax, bars, vals):
-        for b, v in zip(bars, vals):
-            h = b.get_height()
-            va = "bottom" if h >= 0 else "top"
-            off = 4 if h >= 0 else -4
-            ax.annotate(f"{v:.2g}", (b.get_x() + b.get_width() / 2, h),
-                        ha="center", va=va, fontsize=8, color=MUTED,
-                        xytext=(0, off), textcoords="offset points")
+    def label_bars(ax, pairs):
+        """Plain text labels; skipped for near-zero bars to avoid collisions."""
+        ymin, ymax = ax.get_ylim()
+        span = ymax - ymin
+        pad = 0.02 * span
+        threshold = 0.05 * span
+        for b, v in pairs:
+            if abs(v) < threshold:
+                continue
+            if v >= 0:
+                ax.text(b.get_x() + b.get_width() / 2, v + pad, f"{v:.2g}",
+                        ha="center", va="bottom", fontsize=8, color=MUTED)
+            else:
+                ax.text(b.get_x() + b.get_width() / 2, v - pad, f"{v:.2g}",
+                        ha="center", va="top", fontsize=8, color=MUTED)
 
     def draw_group(ax, x, triples, width=0.26):
-        handles = []
+        pairs = []
         for j, (name, vals, color) in enumerate(triples):
             if vals is None or any(v is None for v in vals):
                 continue
             bars = ax.bar(x + (j - 1) * width, vals, width, label=name,
                           color=color, alpha=0.85, edgecolor="none", zorder=3)
-            label_bars(ax, bars, vals)
-            handles.append(bars)
+            pairs.extend(zip(bars, vals))
+        return pairs
 
     # left panel: features only
     xf = np.arange(len(feat_labels))
-    draw_group(ax1, xf, [
+    pairs1 = draw_group(ax1, xf, [
         ("original", feat_orig, MUTED),
         ("replacement", feat_repl, ACCENT),
         ("reference", feat_ref, GREEN),
@@ -610,6 +617,7 @@ def coefficient_chart(original_model, replacement_model, ref_coef, ref_intercept
     ax1.axhline(0, color=(1, 1, 1), alpha=0.12, linewidth=0.8, zorder=2)
     style_axis(ax1)
     ax1.set_title("feature coefficients", color=ACCENT, fontsize=10, pad=10)
+    label_bars(ax1, pairs1)
 
     # right panel: intercept only
     triples_i = [
@@ -618,11 +626,12 @@ def coefficient_chart(original_model, replacement_model, ref_coef, ref_intercept
     ]
     if int_ref is not None:
         triples_i.append(("reference", [int_ref], GREEN))
-    draw_group(ax2, np.arange(1), triples_i)
+    pairs2 = draw_group(ax2, np.arange(1), triples_i)
     ax2.set_xticks([0])
     ax2.set_xticklabels(["intercept"], color=MUTED, fontsize=9)
     style_axis(ax2)
     ax2.set_title("intercept", color=ACCENT, fontsize=10, pad=10)
+    label_bars(ax2, pairs2)
 
     fig.suptitle("Ridge coefficients — original vs replacement vs reference",
                  color=ACCENT, fontsize=11, y=0.99)
