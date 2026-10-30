@@ -1,0 +1,5 @@
+forgetgraph.db
+original_model.pkl
+__pycache__/
+*.pyc
+.vibe/
