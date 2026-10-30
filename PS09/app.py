@@ -566,8 +566,8 @@ def coefficient_chart(original_model, replacement_model, ref_coef, ref_intercept
         int_ref = None
 
     fig, (ax1, ax2) = plt.subplots(
-        1, 2, width_ratios=[4, 1], figsize=(10, 4),
-        gridspec_kw={"wspace": 0.22},
+        1, 2, width_ratios=[4, 1], figsize=(11, 4.2),
+        gridspec_kw={"wspace": 0.35},
     )
     fig.patch.set_alpha(0.0)
 
@@ -583,9 +583,9 @@ def coefficient_chart(original_model, replacement_model, ref_coef, ref_intercept
         for b, v in zip(bars, vals):
             h = b.get_height()
             va = "bottom" if h >= 0 else "top"
-            off = 2 if h >= 0 else -2
-            ax.annotate(f"{v:.2f}", (b.get_x() + b.get_width() / 2, h),
-                        ha="center", va=va, fontsize=6.5, color=MUTED,
+            off = 4 if h >= 0 else -4
+            ax.annotate(f"{v:.2g}", (b.get_x() + b.get_width() / 2, h),
+                        ha="center", va=va, fontsize=8, color=MUTED,
                         xytext=(0, off), textcoords="offset points")
 
     def draw_group(ax, x, triples, width=0.26):
@@ -625,13 +625,15 @@ def coefficient_chart(original_model, replacement_model, ref_coef, ref_intercept
     ax2.set_title("intercept", color=ACCENT, fontsize=10, pad=10)
 
     fig.suptitle("Ridge coefficients — original vs replacement vs reference",
-                 color=ACCENT, fontsize=11, y=0.98)
-    legend = ax1.legend(facecolor=(0.043, 0.059, 0.114, 0.85), edgecolor=(1, 1, 1, 0.12),
-                        labelcolor=TEXT, fontsize=9, loc="upper right",
-                        bbox_to_anchor=(1.0, 1.0), framealpha=0.85)
+                 color=ACCENT, fontsize=11, y=0.99)
+    handles, labels_ = ax1.get_legend_handles_labels()
+    legend = fig.legend(handles, labels_, loc="lower center", ncol=3,
+                        facecolor=(0.043, 0.059, 0.114, 0.85),
+                        edgecolor=(1, 1, 1, 0.12), labelcolor=TEXT, fontsize=9,
+                        bbox_to_anchor=(0.5, -0.02), framealpha=0.85)
     legend.get_frame().set_boxstyle("round", rounding_size=8)
     legend.set_zorder(12)
-    fig.subplots_adjust(top=0.82)
+    fig.subplots_adjust(top=0.85, bottom=0.16)
     st.pyplot(fig)
     plt.close(fig)
 
