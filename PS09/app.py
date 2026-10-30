@@ -637,10 +637,8 @@ def coefficient_chart(original_model, replacement_model, ref_coef, ref_intercept
                  color=ACCENT, fontsize=11, y=0.99)
     handles, labels_ = ax1.get_legend_handles_labels()
     legend = fig.legend(handles, labels_, loc="lower center", ncol=3,
-                        facecolor=(0.043, 0.059, 0.114, 0.85),
-                        edgecolor=(1, 1, 1, 0.12), labelcolor=TEXT, fontsize=9,
-                        bbox_to_anchor=(0.5, -0.02), framealpha=0.85)
-    legend.get_frame().set_boxstyle("round", rounding_size=8)
+                        labelcolor=TEXT, fontsize=9, frameon=False,
+                        bbox_to_anchor=(0.5, -0.02))
     legend.set_zorder(12)
     fig.subplots_adjust(top=0.85, bottom=0.16)
     st.pyplot(fig)
