@@ -1,0 +1,9 @@
+numpy
+scikit-learn
+streamlit
+networkx
+matplotlib
+pandas
+pytest
+joblib
+streamlit-option-menu
