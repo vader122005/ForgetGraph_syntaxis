@@ -50,6 +50,15 @@ STEP_LABELS = {
 
 CSS = f"""
 <style>
+  @keyframes fgFadeUp {{
+      from {{ opacity: 0; transform: translateY(12px); }}
+      to   {{ opacity: 1; transform: none; }}
+  }}
+  @keyframes fgPulse {{
+      0%, 100% {{ box-shadow: 0 0 0 0 rgba(74,222,128,0.35); }}
+      50%      {{ box-shadow: 0 0 0 10px rgba(74,222,128,0); }}
+  }}
+  @keyframes fgSpin {{ to {{ transform: rotate(360deg); }} }}
   html, body, .stApp {{ background: {BG} !important; color: {TEXT}; }}
   .stApp, section.stApp {{ background: {BG} !important; }}
   html, body, [class*="css"] {{
@@ -77,16 +86,33 @@ CSS = f"""
   }}
   .fg-h4 {{
       font-size: 1.05rem; font-weight: 700; color: {TEXT};
-      margin: 1.4rem 0 0.6rem 0;
+      margin: 1.4rem 0 0.6rem 0; letter-spacing: 0.02em;
   }}
   .fg-card {{
       background: {CARD}; border: 1px solid {BORDER}; border-radius: 16px;
-      padding: 1.2rem 1.4rem; margin-bottom: 1rem;
+      padding: 1.25rem 1.45rem; margin-bottom: 1rem;
+      animation: fgFadeUp 0.45s ease-out both;
+      transition: all 0.25s ease;
+  }}
+  .fg-card:hover {{
+      transform: translateY(-3px); border-color: {ACCENT};
+      box-shadow: 0 8px 24px rgba(108,140,255,0.15);
   }}
   .fg-kpi {{
       background: {CARD}; border: 1px solid {BORDER}; border-radius: 16px;
       padding: 1rem 1.1rem; height: 100%;
+      animation: fgFadeUp 0.45s ease-out both;
+      transition: all 0.25s ease;
   }}
+  .fg-kpi:hover {{
+      transform: translateY(-3px); border-color: {ACCENT};
+      box-shadow: 0 8px 24px rgba(108,140,255,0.15);
+  }}
+  .fg-kpi:nth-of-type(1) {{ animation-delay: 0s; }}
+  .fg-kpi:nth-of-type(2) {{ animation-delay: 0.06s; }}
+  .fg-kpi:nth-of-type(3) {{ animation-delay: 0.12s; }}
+  .fg-kpi:nth-of-type(4) {{ animation-delay: 0.18s; }}
+  .fg-kpi:nth-of-type(5) {{ animation-delay: 0.24s; }}
   .fg-kpi-label {{ color: {MUTED}; font-size: 0.75rem; text-transform: uppercase;
                    letter-spacing: 0.08em; }}
   .fg-kpi-value {{ color: {TEXT}; font-size: 1.9rem; font-weight: 800; line-height: 1.2; }}
@@ -95,7 +121,8 @@ CSS = f"""
       display: inline-block; padding: 0.25rem 0.9rem; border-radius: 999px;
       font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em;
   }}
-  .fg-badge.pass  {{ background: rgba(74,222,128,0.22); color: #b9f6d4; border: 1px solid {GREEN}; }}
+  .fg-badge.pass  {{ background: rgba(74,222,128,0.22); color: #b9f6d4; border: 1px solid {GREEN};
+                     animation: fgPulse 2s ease-in-out infinite; }}
   .fg-badge.fail  {{ background: rgba(248,113,113,0.22); color: #ffd4d4; border: 1px solid {RED}; }}
   .fg-badge.block {{ background: rgba(248,113,113,0.22); color: #ffd4d4; border: 1px solid {RED}; }}
   .fg-badge.ok    {{ background: rgba(74,222,128,0.22); color: #b9f6d4; border: 1px solid {GREEN}; }}
@@ -109,23 +136,32 @@ CSS = f"""
   .fg-node {{
       background: {CARD}; border: 1px solid {BORDER}; border-radius: 14px;
       padding: 0.9rem 1rem; text-align: center; flex: 1;
+      animation: fgFadeUp 0.45s ease-out both;
+      transition: border-color 0.25s ease;
   }}
+  .fg-node:hover {{ border-color: {ACCENT}; }}
   .fg-node-title {{ font-weight: 700; font-size: 0.92rem; color: {TEXT}; }}
   .fg-node-count {{ font-size: 1.5rem; font-weight: 800; margin: 0.15rem 0; }}
   .fg-node-sub   {{ color: {MUTED}; font-size: 0.72rem; }}
   .fg-arrow {{ display: flex; align-items: center; justify-content: center;
                color: {MUTED}; font-size: 1.3rem; padding: 0 0.35rem; }}
   .fg-step {{ display: flex; flex-direction: column; align-items: center;
-              text-align: center; flex: 1; min-width: 0; }}
+              text-align: center; flex: 1; min-width: 0;
+              animation: fgFadeUp 0.45s ease-out both; }}
   .fg-dot {{
       width: 2.6rem; height: 2.6rem; border-radius: 50%; display: flex;
       align-items: center; justify-content: center; font-size: 1.1rem;
       margin-bottom: 0.45rem; border: 2px solid {BORDER}; background: {CARD};
   }}
   .fg-dot.done {{ border-color: {GREEN}; background: rgba(74,222,128,0.12); }}
-  .fg-dot.run  {{ border-color: {AMBER}; background: rgba(251,191,36,0.12); }}
+  .fg-dot.run  {{ border-color: {AMBER}; background: rgba(251,191,36,0.12);
+                  border-style: dashed; animation: fgSpin 2.5s linear infinite; }}
   .fg-step-label {{ font-size: 0.78rem; font-weight: 600; color: {TEXT}; }}
   .fg-step-sub   {{ font-size: 0.68rem; color: {MUTED}; }}
+  @media (prefers-reduced-motion: reduce) {{
+      animation: none !important;
+      transition: none !important;
+  }}
   .fg-track {{ height: 2px; background: {BORDER}; margin: 1.3rem -1rem 0.5rem -1rem;
                border-radius: 2px; position: relative; top: -2.6rem; z-index: 0; }}
 </style>
@@ -187,7 +223,10 @@ def kpi(label: str, value: str, sub: str, icon: str) -> str:
 def header() -> None:
     st.markdown(
         f"""
-        <h1 style="margin-bottom:0.15rem;">Data Lifecycle Orchestrator</h1>
+        <h1 style="margin-bottom:0.15rem;
+                   background: linear-gradient(90deg, {ACCENT}, {GREEN});
+                   -webkit-background-clip: text; background-clip: text;
+                   color: transparent; width: fit-content;">Data Lifecycle Orchestrator</h1>
         <div class="fg-sub">Dependency-aware deletion verification —
         {N_USERS} synthetic users · Ridge α={RIDGE_ALPHA} (seed {SEED})</div>
         """,
@@ -392,10 +431,14 @@ def coefficient_chart(original_model, replacement_model, ref_coef, ref_intercept
     ax.tick_params(colors=MUTED)
     for spine in ax.spines.values():
         spine.set_color(BORDER)
-    ax.set_title("Ridge coefficients — original vs replacement vs reference", color=TEXT, fontsize=11)
+    ax.set_title("Ridge coefficients — original vs replacement vs reference",
+                 color=TEXT, fontsize=11, pad=14)
     ax.grid(axis="y", color=BORDER, alpha=0.4, linewidth=0.5)
     ax.set_axisbelow(True)
-    legend = ax.legend(facecolor=CARD, edgecolor=BORDER, labelcolor=TEXT, fontsize=9)
+    legend = ax.legend(facecolor=CARD, edgecolor=BORDER, labelcolor=TEXT, fontsize=9,
+                       loc="upper right", bbox_to_anchor=(1.0, 1.0), framealpha=0.9)
+    legend.set_zorder(12)
+    fig.subplots_adjust(top=0.86)
     fig.tight_layout()
     st.pyplot(fig)
     plt.close(fig)
@@ -475,7 +518,6 @@ def main() -> None:
             f"""
             <div style="padding:0.2rem 0 0.9rem 0.4rem;">
               <div style="font-size:1.3rem;font-weight:800;color:{TEXT};letter-spacing:0.02em;">FORGETGRAPH</div>
-              <div style="color:{MUTED};font-size:0.75rem;">Data Lifecycle Orchestrator</div>
             </div>
             """,
             unsafe_allow_html=True,
