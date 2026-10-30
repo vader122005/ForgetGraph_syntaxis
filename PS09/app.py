@@ -450,7 +450,7 @@ def kpi_row() -> None:
 
 
 def dependency_graph() -> None:
-    st.markdown(overline("02", "LINEAGE"))
+    st.markdown(overline("02", "LINEAGE"), unsafe_allow_html=True)
     st.markdown('<div class="fg-h4">Dependency Graph</div>', unsafe_allow_html=True)
     users_n = db_count("SELECT COUNT(*) FROM users")
     feats_n = db_count("SELECT COUNT(*) FROM features")
@@ -489,7 +489,7 @@ def dependency_graph() -> None:
 
 
 def deletion_center() -> None:
-    st.markdown(overline("03", "ORCHESTRATION"))
+    st.markdown(overline("03", "ORCHESTRATION"), unsafe_allow_html=True)
     st.markdown('<div class="fg-h4">Deletion Center</div>', unsafe_allow_html=True)
     left, right = st.columns([1, 2])
     with left:
@@ -552,57 +552,92 @@ def deletion_center() -> None:
 
 
 def coefficient_chart(original_model, replacement_model, ref_coef, ref_intercept) -> None:
-    """Grouped bar chart: original vs replacement vs reference coefficients."""
-    labels = list(FEATURE_NAMES) + ["intercept"]
-    original_vals = list(original_model.coef_) + [original_model.intercept_]
-    replacement_vals = list(replacement_model.coef_) + [replacement_model.intercept_]
+    """Two-panel chart: features (left, auto-scaled) and intercept (right, own scale)."""
+    feat_labels = list(FEATURE_NAMES)
+    feat_orig = list(original_model.coef_)
+    feat_repl = list(replacement_model.coef_)
+    int_orig = float(original_model.intercept_)
+    int_repl = float(replacement_model.intercept_)
     if ref_coef is not None and ref_intercept is not None:
-        reference_vals = list(ref_coef) + [ref_intercept]
+        feat_ref = list(ref_coef)
+        int_ref = float(ref_intercept)
     else:
-        reference_vals = [None] * len(labels)
+        feat_ref = [None] * len(feat_labels)
+        int_ref = None
 
-    x = np.arange(len(labels))
-    width = 0.26
-
-    fig, ax = plt.subplots(figsize=(9, 3.6))
+    fig, (ax1, ax2) = plt.subplots(
+        1, 2, width_ratios=[4, 1], figsize=(10, 4),
+        gridspec_kw={"wspace": 0.22},
+    )
     fig.patch.set_alpha(0.0)
-    ax.set_facecolor("none")
 
-    series = [
-        ("original", original_vals, MUTED),
-        ("replacement", replacement_vals, ACCENT),
-        ("reference", reference_vals, GREEN),
-    ]
-    for j, (name, vals, color) in enumerate(series):
-        if all(v is not None for v in vals):
+    def style_axis(ax):
+        ax.set_facecolor("none")
+        ax.tick_params(colors=MUTED)
+        for spine in ax.spines.values():
+            spine.set_visible(False)
+        ax.grid(axis="y", color=(1, 1, 1), alpha=0.06, linewidth=0.6)
+        ax.set_axisbelow(True)
+
+    def label_bars(ax, bars, vals):
+        for b, v in zip(bars, vals):
+            h = b.get_height()
+            va = "bottom" if h >= 0 else "top"
+            off = 2 if h >= 0 else -2
+            ax.annotate(f"{v:.2f}", (b.get_x() + b.get_width() / 2, h),
+                        ha="center", va=va, fontsize=6.5, color=MUTED,
+                        xytext=(0, off), textcoords="offset points")
+
+    def draw_group(ax, x, triples, width=0.26):
+        handles = []
+        for j, (name, vals, color) in enumerate(triples):
+            if vals is None or any(v is None for v in vals):
+                continue
             bars = ax.bar(x + (j - 1) * width, vals, width, label=name,
                           color=color, alpha=0.85, edgecolor="none", zorder=3)
-            for b, v in zip(bars, vals):
-                ax.annotate(f"{v:.2f}", (b.get_x() + b.get_width() / 2, b.get_height()),
-                            ha="center", va="bottom", fontsize=6.5, color=MUTED,
-                            xytext=(0, 2), textcoords="offset points")
+            label_bars(ax, bars, vals)
+            handles.append(bars)
 
-    ax.set_xticks(x)
-    ax.set_xticklabels(labels, color=MUTED, fontsize=9)
-    ax.tick_params(colors=MUTED)
-    for spine in ax.spines.values():
-        spine.set_visible(False)
-    ax.grid(axis="y", color=(1, 1, 1), alpha=0.06, linewidth=0.6)
-    ax.set_axisbelow(True)
-    ax.set_title("Ridge coefficients — original vs replacement vs reference",
-                 color=ACCENT, fontsize=11, pad=14)
-    legend = ax.legend(facecolor=(0.043, 0.059, 0.114, 0.85), edgecolor=(1, 1, 1, 0.12),
-                       labelcolor=TEXT, fontsize=9, loc="upper right",
-                       bbox_to_anchor=(1.0, 1.0), framealpha=0.85)
+    # left panel: features only
+    xf = np.arange(len(feat_labels))
+    draw_group(ax1, xf, [
+        ("original", feat_orig, MUTED),
+        ("replacement", feat_repl, ACCENT),
+        ("reference", feat_ref, GREEN),
+    ])
+    ax1.set_xticks(xf)
+    ax1.set_xticklabels(feat_labels, color=MUTED, fontsize=9)
+    ax1.axhline(0, color=(1, 1, 1), alpha=0.12, linewidth=0.8, zorder=2)
+    style_axis(ax1)
+    ax1.set_title("feature coefficients", color=ACCENT, fontsize=10, pad=10)
+
+    # right panel: intercept only
+    triples_i = [
+        ("original", [int_orig], MUTED),
+        ("replacement", [int_repl], ACCENT),
+    ]
+    if int_ref is not None:
+        triples_i.append(("reference", [int_ref], GREEN))
+    draw_group(ax2, np.arange(1), triples_i)
+    ax2.set_xticks([0])
+    ax2.set_xticklabels(["intercept"], color=MUTED, fontsize=9)
+    style_axis(ax2)
+    ax2.set_title("intercept", color=ACCENT, fontsize=10, pad=10)
+
+    fig.suptitle("Ridge coefficients — original vs replacement vs reference",
+                 color=ACCENT, fontsize=11, y=0.98)
+    legend = ax1.legend(facecolor=(0.043, 0.059, 0.114, 0.85), edgecolor=(1, 1, 1, 0.12),
+                        labelcolor=TEXT, fontsize=9, loc="upper right",
+                        bbox_to_anchor=(1.0, 1.0), framealpha=0.85)
     legend.get_frame().set_boxstyle("round", rounding_size=8)
     legend.set_zorder(12)
-    fig.tight_layout()
+    fig.subplots_adjust(top=0.82)
     st.pyplot(fig)
     plt.close(fig)
 
 
 def model_comparison() -> None:
-    st.markdown(overline("04", "EVIDENCE"))
+    st.markdown(overline("04", "EVIDENCE"), unsafe_allow_html=True)
     st.markdown('<div class="fg-h4">Model Comparison</div>', unsafe_allow_html=True)
     original_model = load_original_model()
     if original_model is None:
@@ -656,7 +691,7 @@ def model_comparison() -> None:
 
 
 def tombstones() -> None:
-    st.markdown(overline("05", "REGISTRY"))
+    st.markdown(overline("05", "REGISTRY"), unsafe_allow_html=True)
     st.markdown('<div class="fg-h4">Deleted Users (Tombstones)</div>', unsafe_allow_html=True)
     rows = db_rows("SELECT user_id, deleted_at FROM tombstones ORDER BY user_id")
     if not rows:
@@ -678,7 +713,7 @@ def tombstones() -> None:
 
 
 def reingestion() -> None:
-    st.markdown(overline("06", "GUARD"))
+    st.markdown(overline("06", "GUARD"), unsafe_allow_html=True)
     st.markdown('<div class="fg-h4">Re-ingestion Guard</div>', unsafe_allow_html=True)
     left, right = st.columns(2)
     with left:
