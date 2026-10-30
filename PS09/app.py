@@ -11,6 +11,10 @@ from __future__ import annotations
 
 import pickle
 
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
 import streamlit as st
 
 from forgetgraph import DB_PATH, N_USERS, RIDGE_ALPHA, SEED
@@ -346,6 +350,43 @@ def model_comparison() -> None:
         f"reference model trained independently on retained rows.</div></div>",
         unsafe_allow_html=True,
     )
+    coefficient_chart(original_model, replacement_model, ref_coef, ref_intercept)
+
+
+def coefficient_chart(original_model, replacement_model, ref_coef, ref_intercept) -> None:
+    """Grouped bar chart: original vs replacement vs reference coefficients."""
+    labels = list(FEATURE_NAMES) + ["intercept"]
+    original_vals = list(original_model.coef_) + [original_model.intercept_]
+    replacement_vals = list(replacement_model.coef_) + [replacement_model.intercept_]
+    if ref_coef is not None and ref_intercept is not None:
+        reference_vals = list(ref_coef) + [ref_intercept]
+    else:
+        reference_vals = [None] * len(labels)
+
+    x = np.arange(len(labels))
+    width = 0.26
+
+    fig, ax = plt.subplots(figsize=(9, 3.4))
+    fig.patch.set_facecolor(BG)
+    ax.set_facecolor(CARD)
+
+    ax.bar(x - width, original_vals, width, label="original", color=MUTED, edgecolor=BORDER)
+    ax.bar(x, replacement_vals, width, label="replacement", color=ACCENT, edgecolor=BORDER)
+    if all(v is not None for v in reference_vals):
+        ax.bar(x + width, reference_vals, width, label="reference", color=GREEN, edgecolor=BORDER)
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels, color=MUTED, fontsize=9)
+    ax.tick_params(colors=MUTED)
+    for spine in ax.spines.values():
+        spine.set_color(BORDER)
+    ax.set_title("Ridge coefficients — original vs replacement vs reference", color=TEXT, fontsize=11)
+    ax.grid(axis="y", color=BORDER, alpha=0.4, linewidth=0.5)
+    ax.set_axisbelow(True)
+    legend = ax.legend(facecolor=CARD, edgecolor=BORDER, labelcolor=TEXT, fontsize=9)
+    fig.tight_layout()
+    st.pyplot(fig)
+    plt.close(fig)
 
 
 def tombstones() -> None:
