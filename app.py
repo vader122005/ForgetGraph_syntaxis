@@ -31,6 +31,11 @@ from forgetgraph.schema import create_tables
 
 MODEL_PATH = "original_model.pkl"
 
+NODE_USERS = "users\n(raw rows)"
+NODE_FEATURES = "features\n(derived)"
+NODE_PREDICTIONS = "predictions\n(cached)"
+NODE_MODEL = "model\n(Ridge)"
+
 PIPELINE_STEPS = [
     "source_removed",
     "features_recomputed",
@@ -62,15 +67,15 @@ def section_dependency_graph() -> None:
     st.markdown("Deleting a user must propagate through every layer:")
 
     G = nx.DiGraph()
-    G.add_edge("users\n(raw rows)", "features\n(derived)")
-    G.add_edge("features", "predictions\n(cached)")
-    G.add_edge("features", "model\n(Ridge)")
+    G.add_edge(NODE_USERS, NODE_FEATURES)
+    G.add_edge(NODE_FEATURES, NODE_PREDICTIONS)
+    G.add_edge(NODE_FEATURES, NODE_MODEL)
 
     pos = {
-        "users\n(raw rows)": (0, 0),
-        "features\n(derived)": (1, 0),
-        "predictions\n(cached)": (2, 0.6),
-        "model\n(Ridge)": (2, -0.6),
+        NODE_USERS: (0, 0),
+        NODE_FEATURES: (1, 0),
+        NODE_PREDICTIONS: (2, 0.6),
+        NODE_MODEL: (2, -0.6),
     }
     fig, ax = plt.subplots(figsize=(8, 3))
     nx.draw(
